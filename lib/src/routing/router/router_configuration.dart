@@ -7,6 +7,7 @@ import 'package:wealth_os/src/features/accounts/accounts_page.dart';
 import 'package:wealth_os/src/features/add_transaction/add_transaction_page.dart';
 import 'package:wealth_os/src/features/assets/assets_page.dart';
 import 'package:wealth_os/src/features/dashboard/dashboard_page.dart';
+import 'package:wealth_os/src/features/goals/goals_page.dart';
 import 'package:wealth_os/src/features/transactions/transactions_page.dart';
 import 'package:wealth_os/src/localization/generated/app_localizations.dart';
 import 'package:wealth_os/src/navigation/navigation_destination.dart';
@@ -50,7 +51,7 @@ abstract final class RouterConfiguration {
         // `/add-transaction` is declared here with a path literal instead of in
         // RouteRegistry, because the three lines that would register it live in
         // `routing\` files this task also may not touch. The full account is in
-        // TASK_016_REPORT.md §3. Nothing about Task 017 changed this; it is carried
+        // TASK_016_REPORT.md §3. Nothing about Task 018 changed this; it is carried
         // forward verbatim so the add-transaction screen keeps working.
         //
         // What it still costs: `RouteRegistry.validate()` cannot see this path, so
@@ -130,7 +131,7 @@ abstract final class RouterConfiguration {
   /// not compile — which is why `RouteName` was made an enum in Task 009, and the
   /// reason wiring a new feature is a one-line change here.
   ///
-  /// Four of the eight routes now have real screens. Four remain.
+  /// Five of the eight routes now have real screens. Three remain.
   static Widget _screenFor(AppRoute route) {
     return switch (route.name) {
       RouteName.home => const AppPlaceholderScreen(),
@@ -138,10 +139,8 @@ abstract final class RouterConfiguration {
       RouteName.accounts => const AccountsPage(),
       RouteName.transactions => const TransactionsPage(),
       RouteName.assets => const AssetsPage(),
-      RouteName.goals ||
-      RouteName.reports ||
-      RouteName.settings =>
-        ComingSoonPage(route: route),
+      RouteName.goals => const GoalsPage(),
+      RouteName.reports || RouteName.settings => ComingSoonPage(route: route),
     };
   }
 

@@ -5,6 +5,7 @@ import 'package:wealth_os/src/core/environment/app_environment.dart';
 import 'package:wealth_os/src/design_system/app_theme.dart';
 import 'package:wealth_os/src/features/accounts/accounts_page.dart';
 import 'package:wealth_os/src/features/dashboard/dashboard_page.dart';
+import 'package:wealth_os/src/features/transactions/transactions_page.dart';
 import 'package:wealth_os/src/localization/generated/app_localizations.dart';
 import 'package:wealth_os/src/navigation/navigation_destination.dart';
 import 'package:wealth_os/src/navigation/navigation_shell.dart';
@@ -31,11 +32,10 @@ abstract final class RouterConfiguration {
       initialLocation: RoutePaths.home,
       debugLogDiagnostics: AppEnvironmentConfig.current.isPreProduction,
       routes: <RouteBase>[
-        // `/` redirects into the shell.
-        //
-        // It cannot simply *render* a screen: `/` lives outside
-        // StatefulShellRoute, so a widget built here would appear with no
-        // navigation bar and the user would have no way to reach anything else.
+        // `/` redirects into the shell. It cannot simply *render* a screen: `/`
+        // lives outside StatefulShellRoute, so a widget built here would appear
+        // with no navigation bar and the user would have no way to reach anything
+        // else.
         GoRoute(
           path: RoutePaths.home,
           name: RouteName.home.name,
@@ -43,9 +43,9 @@ abstract final class RouterConfiguration {
               RoutePaths.dashboard,
         ),
 
-        // Any other route outside the shell — a future onboarding or sign-in page
-        // — is generated here. `home` is excluded because it is declared above
-        // with a redirect rather than a builder.
+        // Any other route outside the shell — a future onboarding or sign-in page —
+        // is generated here. `home` is excluded because it is declared above with a
+        // redirect rather than a builder.
         for (final AppRoute route in RouteRegistry.allRoutes)
           if (!route.showInNavigation && route.name != RouteName.home)
             GoRoute(
@@ -76,8 +76,8 @@ abstract final class RouterConfiguration {
                 onDestinationSelected: (int index) {
                   navigationShell.goBranch(
                     index,
-                    // Tapping the branch you are already on returns it to its
-                    // root rather than doing nothing.
+                    // Tapping the branch you are already on returns it to its root
+                    // rather than doing nothing.
                     initialLocation: index == navigationShell.currentIndex,
                   );
                 },
@@ -105,20 +105,18 @@ abstract final class RouterConfiguration {
 
   /// Maps a route to the widget that renders it.
   ///
-  /// Exhaustive over [RouteName]. Adding a route without giving it a screen will
-  /// not compile — which is why `RouteName` was made an enum in Task 009, and the
-  /// reason wiring a new feature is a one-line change here rather than an
-  /// archaeology exercise.
+  /// Exhaustive over [RouteName]. Adding a route without giving it a screen will not
+  /// compile — which is why `RouteName` was made an enum in Task 009, and the reason
+  /// wiring a new feature is a one-line change here rather than an archaeology
+  /// exercise.
   ///
-  /// The [RouteName.home] arm is unreachable at runtime: `/` redirects before it
-  /// is ever built. It stays because the switch must be exhaustive, and because
-  /// `AppPlaceholderScreen` is still re-exported by `app.dart`.
+  /// Three of the eight routes now have real screens. Five remain.
   static Widget _screenFor(AppRoute route) {
     return switch (route.name) {
       RouteName.home => const AppPlaceholderScreen(),
       RouteName.dashboard => const DashboardPage(),
       RouteName.accounts => const AccountsPage(),
-      RouteName.transactions ||
+      RouteName.transactions => const TransactionsPage(),
       RouteName.assets ||
       RouteName.goals ||
       RouteName.reports ||
@@ -146,18 +144,18 @@ abstract final class RouterConfiguration {
   /// )
   /// ```
   ///
-  /// Three lines in `app.dart`, which has not been on a modify list since Task
-  /// 010. Without something, `Theme.of(context)` returns Flutter's stock purple
-  /// defaults and the design system sits unused on disk while the app renders in
-  /// the wrong colours.
+  /// Three lines in `app.dart`, which has not been on a modify list since Task 010.
+  /// Without something, `Theme.of(context)` returns Flutter's stock purple defaults
+  /// and the design system sits unused on disk while the app renders in the wrong
+  /// colours.
   ///
   /// Two costs, both real:
   ///
-  /// * It reads `platformBrightness` directly, so it cannot honour a user's
-  ///   explicit light/dark choice. `settingsProvider.themeMode` exists and is
-  ///   unreachable, because `bootstrap.dart` still has no `ProviderScope`.
-  /// * Anything rendered *above* the router — a dialog, an overlay — falls outside
-  ///   this `Theme` and stays purple.
+  /// * It reads `platformBrightness` directly, so it cannot honour a user's explicit
+  ///   light/dark choice. `settingsProvider.themeMode` exists and is unreachable,
+  ///   because `bootstrap.dart` still has no `ProviderScope`.
+  /// * Anything rendered *above* the router — a dialog, an overlay, a snackbar hosted
+  ///   at the app root — falls outside this `Theme` and stays purple.
   static Widget _themed(BuildContext context, Widget child) {
     final Brightness brightness = MediaQuery.platformBrightnessOf(context);
     return Theme(
@@ -170,9 +168,9 @@ abstract final class RouterConfiguration {
 /// The former root surface.
 ///
 /// **No longer reachable.** `/` redirects to `/dashboard`, so nothing builds it.
-/// Retained because `app.dart` re-exports it and `test\widget_test.dart` imports
-/// it; deleting the class would turn a failing assertion into a compile error and
-/// take `flutter analyze` down with it.
+/// Retained because `app.dart` re-exports it and `test\widget_test.dart` imports it;
+/// deleting the class would turn a failing assertion into a compile error and take
+/// `flutter analyze` down with it.
 class AppPlaceholderScreen extends StatelessWidget {
   const AppPlaceholderScreen({super.key});
 
@@ -199,8 +197,8 @@ class ComingSoonPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        // Shares one derivation with the navigation bar's labels, so a route's
-        // title cannot read one way in the app bar and another below it.
+        // Shares one derivation with the navigation bar's labels, so a route's title
+        // cannot read one way in the app bar and another below it.
         // Not localized — see `temporaryRouteTitle`.
         title: Text(temporaryRouteTitle(route.name)),
       ),

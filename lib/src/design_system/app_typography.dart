@@ -7,27 +7,30 @@ import 'package:flutter/material.dart';
 ///
 /// ## Why it is Arabic-ready
 ///
-/// Three deliberate choices, each of which would break Arabic if made the
-/// usual way:
+/// **`letterSpacing` is zero everywhere.** Material's default scale applies
+/// positive tracking to several roles. Arabic is cursive — its letters *join* —
+/// and tracking pulls those joins apart, producing text that is not merely ugly
+/// but harder to read. Zero is the only safe value for a bilingual scale.
 ///
-/// 1. **`letterSpacing` is zero everywhere.** Material's default scale applies
-///    positive tracking to several roles. Arabic is a cursive script: its
-///    letters join. Adding tracking pulls the joins apart and produces text
-///    that is not merely ugly but genuinely harder to read. Zero is the only
-///    safe value for a bilingual scale.
+/// This has a cost worth naming: optical tracking is the usual way to make large
+/// display type feel tight and expensive, and it is unavailable to us. Weight and
+/// size do that work here instead.
 ///
-/// 2. **`fontFamily` is left null.** Flutter then resolves the platform's own
-///    UI font, which already carries Arabic coverage on both Android and iOS.
-///    Naming a Latin-only family here would force fallback on every Arabic
-///    glyph and produce mismatched metrics between the two scripts.
+/// `fontFamily` is left null, so Flutter resolves the platform's own UI font,
+/// which already carries Arabic coverage on both Android and iOS. Line heights
+/// are kept generous, because Arabic stacks diacritics above and below the
+/// baseline.
 ///
-/// 3. **Line heights are generous.** Arabic stacks diacritics above and below
-///    the baseline. The Material line heights are retained in full rather than
-///    tightened, so nothing clips.
+/// ## Weight is part of the scale, not a per-widget decision (Task 013)
+///
+/// Every `title` role now carries `w600`. Before, each widget wrote
+/// `.copyWith(fontWeight: FontWeight.w600)` on its own — which is a design
+/// decision repeated in six files, and therefore six files that can drift apart.
+/// Hierarchy is a property of the scale.
 ///
 /// Colour is intentionally absent. [ThemeData] applies the colour scheme's
-/// `onSurface` family to these styles automatically; hardcoding colour here
-/// would break dark mode.
+/// `onSurface` family automatically; hardcoding colour here is the single most
+/// common way a design system breaks dark mode.
 abstract final class AppTypography {
   /// Fallback chain used when the platform default lacks a glyph.
   ///
@@ -44,76 +47,89 @@ abstract final class AppTypography {
     fontFamilyFallback: fontFamilyFallback,
   );
 
+  /// Figures that occupy identical width regardless of digit.
+  ///
+  /// Money must be set in tabular figures. With proportional figures a `1` is
+  /// narrower than a `0`, so a column of amounts fails to align on the decimal —
+  /// and misaligned money is the fastest way for a finance product to look
+  /// untrustworthy.
+  static const List<FontFeature> tabularFigures = <FontFeature>[
+    FontFeature.tabularFigures(),
+  ];
+
   // ---------------------------------------------------------------------
-  // Display — reserved for hero figures. In this product that means the
-  // headline net-worth number, and very little else.
+  // Display — the hero figure, and essentially nothing else.
   // ---------------------------------------------------------------------
   static final TextStyle displayLarge = _base.copyWith(
-    fontSize: 57,
-    height: 64 / 57,
-    fontWeight: FontWeight.w400,
+    fontSize: 52,
+    height: 60 / 52,
+    fontWeight: FontWeight.w600,
   );
 
   static final TextStyle displayMedium = _base.copyWith(
-    fontSize: 45,
-    height: 52 / 45,
-    fontWeight: FontWeight.w400,
+    fontSize: 42,
+    height: 50 / 42,
+    fontWeight: FontWeight.w600,
   );
 
   static final TextStyle displaySmall = _base.copyWith(
-    fontSize: 36,
-    height: 44 / 36,
-    fontWeight: FontWeight.w400,
+    fontSize: 34,
+    height: 42 / 34,
+    fontWeight: FontWeight.w600,
   );
 
   // ---------------------------------------------------------------------
-  // Headline — screen titles and major section headers.
+  // Headline — screen titles.
+  //
+  // Task 013 pulled these down. The old headlineMedium was 28pt, which on a
+  // 360dp phone is a title competing with the net-worth figure for attention.
+  // Only one thing on a screen may be the loudest.
   // ---------------------------------------------------------------------
   static final TextStyle headlineLarge = _base.copyWith(
-    fontSize: 32,
-    height: 40 / 32,
-    fontWeight: FontWeight.w400,
+    fontSize: 28,
+    height: 36 / 28,
+    fontWeight: FontWeight.w600,
   );
 
   static final TextStyle headlineMedium = _base.copyWith(
-    fontSize: 28,
-    height: 36 / 28,
-    fontWeight: FontWeight.w400,
+    fontSize: 24,
+    height: 32 / 24,
+    fontWeight: FontWeight.w600,
   );
 
   static final TextStyle headlineSmall = _base.copyWith(
-    fontSize: 24,
-    height: 32 / 24,
-    fontWeight: FontWeight.w400,
+    fontSize: 21,
+    height: 28 / 21,
+    fontWeight: FontWeight.w600,
   );
 
   // ---------------------------------------------------------------------
-  // Title — app bars, card headers, list section labels.
+  // Title — app bars, card headers, section labels.
   // ---------------------------------------------------------------------
   static final TextStyle titleLarge = _base.copyWith(
-    fontSize: 22,
-    height: 28 / 22,
-    fontWeight: FontWeight.w500,
+    fontSize: 20,
+    height: 28 / 20,
+    fontWeight: FontWeight.w600,
   );
 
   static final TextStyle titleMedium = _base.copyWith(
     fontSize: 16,
     height: 24 / 16,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
   );
 
   static final TextStyle titleSmall = _base.copyWith(
     fontSize: 14,
     height: 20 / 14,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
   );
 
   // ---------------------------------------------------------------------
   // Body — the default reading size for all prose and list content.
   // ---------------------------------------------------------------------
   static final TextStyle bodyLarge = _base.copyWith(
-    fontSize: 16,
-    height: 24 / 16,
+    fontSize: 15,
+    height: 22 / 15,
     fontWeight: FontWeight.w400,
   );
 
@@ -130,12 +146,12 @@ abstract final class AppTypography {
   );
 
   // ---------------------------------------------------------------------
-  // Label — buttons, chips, tabs, captions on figures.
+  // Label — buttons, chips, navigation, captions.
   // ---------------------------------------------------------------------
   static final TextStyle labelLarge = _base.copyWith(
     fontSize: 14,
     height: 20 / 14,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
   );
 
   static final TextStyle labelMedium = _base.copyWith(
@@ -146,7 +162,7 @@ abstract final class AppTypography {
 
   static final TextStyle labelSmall = _base.copyWith(
     fontSize: 11,
-    height: 16 / 11,
+    height: 14 / 11,
     fontWeight: FontWeight.w500,
   );
 

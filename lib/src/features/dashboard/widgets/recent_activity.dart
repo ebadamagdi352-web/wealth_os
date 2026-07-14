@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:wealth_os/src/design_system/app_colors.dart';
 import 'package:wealth_os/src/design_system/app_radius.dart';
 import 'package:wealth_os/src/design_system/app_spacing.dart';
+import 'package:wealth_os/src/design_system/app_theme.dart';
+import 'package:wealth_os/src/design_system/app_typography.dart';
 
 /// One entry in the [RecentActivity] list.
 class ActivityEntry extends Equatable {
@@ -18,9 +20,9 @@ class ActivityEntry extends Equatable {
 
   /// Signed. Positive is money in, negative is money out.
   ///
-  /// A signed number rather than an amount plus an `isIncome` flag. Two fields
-  /// can contradict each other — `amount: -50, isIncome: true` is representable —
-  /// and one cannot.
+  /// A signed number rather than an amount plus an `isIncome` flag. Two fields can
+  /// contradict each other — `amount: -50, isIncome: true` is representable — and
+  /// one cannot.
   final double amount;
 
   /// e.g. "Today", "Yesterday".
@@ -38,8 +40,8 @@ class ActivityEntry extends Equatable {
 ///
 /// ## Sign, not just colour
 ///
-/// Every amount carries an explicit `+` or `−`. The colour is a second,
-/// redundant signal — never the only one.
+/// Every amount carries an explicit `+` or `−`. The colour is a second, redundant
+/// signal — never the only one.
 ///
 /// Roughly one man in twelve has red-green colour deficiency. A ledger that
 /// distinguishes income from expense *solely* by green and red is unreadable to
@@ -63,26 +65,25 @@ class RecentActivity extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final Brightness brightness = theme.brightness;
+    final bool isDark = brightness == Brightness.dark;
 
     return Container(
       padding: AppSpacing.cardAll,
       decoration: BoxDecoration(
-        color: colors.surfaceContainerLow,
-        borderRadius: AppRadius.borderLg,
-        border: Border.all(color: colors.outlineVariant),
+        color: colors.surfaceContainerLowest,
+        borderRadius: AppRadius.borderCard,
+        boxShadow: AppShadows.card(brightness),
+        border: isDark ? Border.all(color: colors.outlineVariant) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          AppSpacing.gapV8,
+          Text(title, style: theme.textTheme.titleMedium),
+          AppSpacing.gapV4,
           for (int i = 0; i < entries.length; i++) ...<Widget>[
-            if (i > 0) Divider(color: colors.outlineVariant, height: 1),
+            if (i > 0)
+              Divider(color: colors.outlineVariant, height: 1, thickness: 1),
             _ActivityRow(
               entry: entries[i],
               currencyCode: currencyCode,
@@ -130,7 +131,7 @@ class _ActivityRow extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: colors.surfaceContainerHighest,
+              color: colors.surfaceContainerHigh,
               borderRadius: AppRadius.borderSm,
             ),
             child: Icon(
@@ -162,10 +163,11 @@ class _ActivityRow extends StatelessWidget {
           AppSpacing.gapH8,
           Text(
             '$sign $currencyCode $formatted',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall?.copyWith(
               color: amountColor,
-              fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+              fontFeatures: AppTypography.tabularFigures,
             ),
           ),
         ],
@@ -179,8 +181,8 @@ class _ActivityRow extends StatelessWidget {
   /// `ColorScheme`, because Material has no role meaning "this number went up".
   /// The correct long-term home is a `ThemeExtension`, which would let a widget
   /// read `Theme.of(context).extension<AppSemanticColors>()!.gain` with no
-  /// branching — see TASK_005_REPORT.md §"Semantic colours". Until that exists,
-  /// the branch lives here, in one place, rather than at every call site.
+  /// branching. Until that exists, the branch lives here, in one place, rather
+  /// than at every call site.
   static Color _semanticColor(Brightness brightness, {required bool isCredit}) {
     final bool isDark = brightness == Brightness.dark;
     if (isCredit) {

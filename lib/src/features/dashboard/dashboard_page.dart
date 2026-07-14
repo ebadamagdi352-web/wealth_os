@@ -10,21 +10,17 @@ import 'package:wealth_os/src/routing/route_names.dart';
 
 /// Every string the dashboard renders.
 ///
-/// ## Why they are all in one class, and why that is a confession
-///
 /// The standing rule since Task 006 is **do not hardcode strings inside widgets**.
-/// This class breaks it. It breaks it in exactly one place, on purpose.
+/// This class breaks it, in exactly one place, on purpose.
 ///
-/// The dashboard needs roughly a dozen strings. None of them exist in
-/// `app_en.arb` or `app_ar.arb`, `gen-l10n` emits a typed getter only for keys
-/// that are *declared*, and the localization layer is on this task's forbidden
-/// list. There is no arrangement of imports that produces a translated
-/// "Total Net Worth" today.
+/// The dashboard needs about a dozen strings. None exist in `app_en.arb` or
+/// `app_ar.arb`, `gen-l10n` emits a typed getter only for keys that are
+/// *declared*, and the localization layer has been out of scope for four
+/// consecutive tasks. There is no arrangement of imports that produces a
+/// translated "Total Net Worth" today.
 ///
-/// So: rather than scatter a dozen literals across five widget files, every one
-/// of them is here. Migrating to ARB then means editing **one** file and deleting
-/// **one** class — a mechanical change of maybe twenty minutes, with the compiler
-/// pointing at every call site.
+/// So rather than scatter a dozen literals across five widget files, every one is
+/// here. Migrating to ARB means editing **one** file and deleting **one** class.
 ///
 /// A distinction worth keeping in view when that happens:
 ///
@@ -60,17 +56,16 @@ class DashboardPage extends StatelessWidget {
   /// Widest the content is allowed to get.
   ///
   /// On a tablet or a desktop window, a dashboard stretched to 1400px is not
-  /// "responsive" — it is unreadable. Lines of text get too long to scan and the
-  /// eye loses its place returning to the left margin. The layout centres and
-  /// stops growing instead.
+  /// "responsive" — it is unreadable. Lines get too long to scan and the eye loses
+  /// its place returning to the left margin. The layout centres and stops growing.
   static const double _maxContentWidth = 720;
 
   // ---------------------------------------------------------------------
-  // MOCK DATA
+  // MOCK DATA — unchanged in Task 013.
   //
-  // Hardcoded, and confined to this file. When a repository exists, these five
-  // constants are deleted and replaced by a single `ref.watch(...)` — no widget
-  // below changes, because no widget below knows where its data came from.
+  // Confined to this file. When a repository exists, these constants are deleted
+  // and replaced by a single `ref.watch(...)` — no widget below changes, because
+  // no widget below knows where its data came from.
   // ---------------------------------------------------------------------
 
   static const String _currencyCode = 'EGP';
@@ -119,11 +114,10 @@ class DashboardPage extends StatelessWidget {
   /// non-nullable precisely so that a shortcut cannot be shipped without a
   /// destination.
   ///
-  /// Two of them are approximations, and I would rather say so than let it pass
-  /// unnoticed: there is no *add* screen for a transaction or an asset yet, so
-  /// those two open the relevant list. "Transfer" has no route of its own at all
-  /// and opens Transactions. When the real screens exist, these four lines are
-  /// where they get wired up.
+  /// Two are approximations: there is no *add* screen for a transaction or an
+  /// asset yet, so those open the relevant list, and "Transfer" has no route of
+  /// its own at all. When the real screens exist, these four lines are where they
+  /// get wired.
   List<QuickAction> _actions(BuildContext context) {
     return <QuickAction>[
       QuickAction(
@@ -154,47 +148,64 @@ class DashboardPage extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.lg,
-                AppSpacing.md,
-                AppSpacing.x2l,
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            // The gutter grows with the window: 16 on a small phone, 20 on a
+            // large one, 24 on a tablet. A fixed 16pt gutter is correct on a
+            // 360dp phone and mean on a tablet, where the content ends up pinned
+            // to the edges of a very wide sheet of glass.
+            final double gutter =
+                AppSpacing.screenGutter(constraints.maxWidth);
+
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: _maxContentWidth),
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(
+                    gutter,
+                    AppSpacing.md,
+                    gutter,
+                    // Generous bottom padding so the last card clears the
+                    // navigation bar when the list is scrolled to the end.
+                    AppSpacing.x2l,
+                  ),
+                  children: <Widget>[
+                    const DashboardHeader(
+                      title: DashboardCopy.title,
+                      subtitle: DashboardCopy.subtitle,
+                    ),
+                    // The header sits closer to the hero than the sections sit to
+                    // each other. Vertical rhythm is not one uniform gap — it is a
+                    // hierarchy of gaps, and a label should always be nearer to
+                    // the thing it labels than to whatever comes next.
+                    AppSpacing.gapV16,
+                    const NetWorthCard(
+                      label: DashboardCopy.netWorthLabel,
+                      amount: _netWorth,
+                      currencyCode: _currencyCode,
+                    ),
+                    AppSpacing.sectionGap,
+                    QuickActions(
+                      title: DashboardCopy.quickActionsTitle,
+                      actions: _actions(context),
+                    ),
+                    AppSpacing.sectionGap,
+                    const AssetSummary(
+                      title: DashboardCopy.assetsTitle,
+                      holdings: _mockAssets,
+                      currencyCode: _currencyCode,
+                    ),
+                    AppSpacing.gapV16,
+                    const RecentActivity(
+                      title: DashboardCopy.recentActivityTitle,
+                      entries: _mockActivity,
+                      currencyCode: _currencyCode,
+                    ),
+                  ],
+                ),
               ),
-              children: <Widget>[
-                const DashboardHeader(
-                  title: DashboardCopy.title,
-                  subtitle: DashboardCopy.subtitle,
-                ),
-                AppSpacing.gapV24,
-                const NetWorthCard(
-                  label: DashboardCopy.netWorthLabel,
-                  amount: _netWorth,
-                  currencyCode: _currencyCode,
-                ),
-                AppSpacing.gapV24,
-                QuickActions(
-                  title: DashboardCopy.quickActionsTitle,
-                  actions: _actions(context),
-                ),
-                AppSpacing.gapV24,
-                const AssetSummary(
-                  title: DashboardCopy.assetsTitle,
-                  holdings: _mockAssets,
-                  currencyCode: _currencyCode,
-                ),
-                AppSpacing.gapV24,
-                const RecentActivity(
-                  title: DashboardCopy.recentActivityTitle,
-                  entries: _mockActivity,
-                  currencyCode: _currencyCode,
-                ),
-              ],
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

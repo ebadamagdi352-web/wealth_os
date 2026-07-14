@@ -1,17 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:wealth_os/src/design_system/app_colors.dart';
 import 'package:wealth_os/src/design_system/app_radius.dart';
 import 'package:wealth_os/src/design_system/app_spacing.dart';
+import 'package:wealth_os/src/design_system/app_theme.dart';
+import 'package:wealth_os/src/design_system/app_typography.dart';
 
 /// The hero figure: total net worth.
 ///
-/// One number, given room to breathe. This is the only thing on the screen a
-/// user opens the app to see, and a card that competes with it — a sparkline, a
-/// percentage badge, a "vs last month" chip — makes it harder to read, not
-/// richer.
+/// ## Task 013 — from mint to ink
+///
+/// This card previously sat on `primaryContainer`, which was a bright mint. Mint
+/// is a *fresh* colour: it belongs on a fitness tracker or a savings challenge.
+/// Under someone's net worth the emotional register is simply wrong.
+///
+/// It is now deep ink with light type — the visual language of a metal card. The
+/// contrast against a near-white page is what makes one number feel like *the*
+/// number, and it does that without needing to be any larger.
+///
+/// One number, given room to breathe. This is the only thing a user opens the app
+/// to see, and a card that competes with it — a sparkline, a percentage badge, a
+/// "vs last month" chip — makes it harder to read, not richer.
 ///
 /// It shows no change indicator, deliberately. The mock data contains no
-/// historical figure, so any percentage here would be invented, and an invented
+/// historical figure, so any percentage here would be invented — and an invented
 /// number in a finance product is not a placeholder, it is a lie with a decimal
 /// point.
 class NetWorthCard extends StatelessWidget {
@@ -40,17 +52,19 @@ class NetWorthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
+    final Brightness brightness = theme.brightness;
+
+    final Color surface = AppColors.heroSurface(brightness);
+    final Color onSurface = AppColors.onHeroSurface(brightness);
+    final Color onSurfaceMuted = AppColors.onHeroSurfaceMuted(brightness);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: AppSpacing.x2l,
-      ),
+      padding: AppSpacing.heroAll,
       decoration: BoxDecoration(
-        color: colors.primaryContainer,
-        borderRadius: AppRadius.borderLg,
+        color: surface,
+        borderRadius: AppRadius.borderHero,
+        boxShadow: AppShadows.hero(brightness),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,8 +72,8 @@ class NetWorthCard extends StatelessWidget {
         children: <Widget>[
           Text(
             label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colors.onPrimaryContainer.withValues(alpha: 0.75),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: onSurfaceMuted,
             ),
           ),
           AppSpacing.gapV12,
@@ -73,20 +87,24 @@ class NetWorthCard extends StatelessWidget {
               Text(
                 currencyCode,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: colors.onPrimaryContainer.withValues(alpha: 0.7),
-                  fontWeight: FontWeight.w600,
+                  color: onSurfaceMuted,
                 ),
               ),
               AppSpacing.gapH8,
+              // FittedBox, not a smaller font: a large balance on a small phone
+              // scales down to fit rather than wrapping onto a second line or
+              // overflowing. A net-worth figure that has been cut in half by a
+              // line break is not a cosmetic problem.
               Flexible(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: AlignmentDirectional.centerStart,
                   child: Text(
                     _format.format(amount),
+                    maxLines: 1,
                     style: theme.textTheme.displaySmall?.copyWith(
-                      color: colors.onPrimaryContainer,
-                      fontWeight: FontWeight.w700,
+                      color: onSurface,
+                      fontFeatures: AppTypography.tabularFigures,
                     ),
                   ),
                 ),

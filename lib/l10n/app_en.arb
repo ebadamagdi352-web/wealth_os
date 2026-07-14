@@ -1,0 +1,23 @@
+{
+  "@@locale": "en",
+
+  "appName": "Wealth OS",
+  "@appName": {
+    "description": "The product name. Shown in the task switcher and app bar. Brand names are not translated, so this value is identical in every language file."
+  },
+
+  "comingSoon": "Coming soon",
+  "@comingSoon": {
+    "description": "Shown on a surface for a feature that exists in navigation but is not yet built."
+  },
+
+  "ok": "OK",
+  "@ok": {
+    "description": "The confirming action in a dialog. Short, imperative."
+  },
+
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "The dismissing action in a dialog. Short, imperative."
+  }
+}

@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:wealth_os/src/core/database/database_constants.dart';
 import 'package:wealth_os/src/core/database/tables/accounts.dart';
+import 'package:wealth_os/src/core/database/tables/assets.dart';
 import 'package:wealth_os/src/core/database/tables/categories.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
 import 'package:wealth_os/src/core/database/tables/exchange_rates.dart';
@@ -28,17 +29,24 @@ part 'app_database.g.dart';
 /// app's documents directory. Repositories, services, and providers are all
 /// deliberately absent — this layer is schema only.
 @DriftDatabase(
-  tables: <Type>[Currencies, ExchangeRates, Accounts, Categories, Transactions],
+  tables: <Type>[
+    Currencies,
+    ExchangeRates,
+    Accounts,
+    Categories,
+    Transactions,
+    Assets,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens (lazily) the on-device SQLite database.
   AppDatabase() : super(_openConnection());
 
   /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
-  /// step. Now 5 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories,
-  /// v5 transactions.
+  /// step. Now 6 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories,
+  /// v5 transactions, v6 assets.
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -63,6 +71,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 5) {
             await m.createTable(transactions);
+          }
+          if (from < 6) {
+            await m.createTable(assets);
           }
           // By here every table up to the current version exists, so the secondary
           // indexes can be declared idempotently in one place, shared with onCreate.
@@ -99,6 +110,19 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_txn_date '
       'ON transactions (transaction_date)',
+    );
+    // Assets: filtered by kind, grouped by currency, and joined to accounts.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_asset_type '
+      'ON assets (type)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_asset_currency '
+      'ON assets (currency_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_asset_account '
+      'ON assets (account_id)',
     );
   }
 }

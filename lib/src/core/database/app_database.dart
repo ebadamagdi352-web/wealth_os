@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:wealth_os/src/core/database/database_constants.dart';
+import 'package:wealth_os/src/core/database/tables/accounts.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
 import 'package:wealth_os/src/core/database/tables/exchange_rates.dart';
 
@@ -24,31 +25,35 @@ part 'app_database.g.dart';
 /// registers the tables, sets the schema version, and opens a SQLite file in the
 /// app's documents directory. Repositories, services, and providers are all
 /// deliberately absent — this layer is schema only.
-@DriftDatabase(tables: <Type>[Currencies, ExchangeRates])
+@DriftDatabase(tables: <Type>[Currencies, ExchangeRates, Accounts])
 class AppDatabase extends _$AppDatabase {
   /// Opens (lazily) the on-device SQLite database.
   AppDatabase() : super(_openConnection());
 
   /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
-  /// step. Now 2 — v1 was currencies only; v2 adds exchange_rates.
+  /// step. Now 3 — v1 currencies, v2 added exchange_rates, v3 adds accounts.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) async {
-          // A fresh install: creates every registered table (currencies and
-          // exchange_rates), with their columns and unique constraints. Never runs
-          // onUpgrade — it starts at the current version.
+          // A fresh install: creates every registered table, with their columns and
+          // constraints. Never runs onUpgrade — it starts at the current version.
           await m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          // v1 → v2: exchange_rates joins the schema. A database created at v1
-          // (currencies only, Task 019A) gains the table here; a fresh install got
-          // it from createAll above and skips this. Guarded by `from` so it runs
-          // once, only on the databases that need it.
+          // Stepped: each guarded block adds exactly what its version introduced, so
+          // a database at any older version catches up by running every step above
+          // it, in order.
+          //
+          // v1 → v2: exchange_rates joins the schema.
           if (from < 2) {
             await m.createTable(exchangeRates);
+          }
+          // v2 → v3: accounts joins the schema.
+          if (from < 3) {
+            await m.createTable(accounts);
           }
         },
         beforeOpen: (OpeningDetails details) async {

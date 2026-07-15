@@ -9,6 +9,7 @@ import 'package:wealth_os/src/core/database/tables/accounts.dart';
 import 'package:wealth_os/src/core/database/tables/categories.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
 import 'package:wealth_os/src/core/database/tables/exchange_rates.dart';
+import 'package:wealth_os/src/core/database/tables/transactions.dart';
 
 // ⚠️ GENERATED FILE — created by code generation, not by hand.
 //
@@ -26,51 +27,46 @@ part 'app_database.g.dart';
 /// registers the tables, sets the schema version, and opens a SQLite file in the
 /// app's documents directory. Repositories, services, and providers are all
 /// deliberately absent — this layer is schema only.
-@DriftDatabase(tables: <Type>[Currencies, ExchangeRates, Accounts, Categories])
+@DriftDatabase(
+  tables: <Type>[Currencies, ExchangeRates, Accounts, Categories, Transactions],
+)
 class AppDatabase extends _$AppDatabase {
   /// Opens (lazily) the on-device SQLite database.
   AppDatabase() : super(_openConnection());
 
   /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
-  /// step. Now 4 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories.
+  /// step. Now 5 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories,
+  /// v5 transactions.
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) async {
           // A fresh install: creates every registered table, with their columns and
-          // constraints. Never runs onUpgrade — it starts at the current version.
+          // constraints, then the secondary indexes. Never runs onUpgrade.
           await m.createAll();
-          // Index the categories tree's parent pointer — the column every
-          // children-of / subtree traversal walks. IF NOT EXISTS keeps it identical
-          // and idempotent with the statement the upgrade path runs.
-          await customStatement(
-            'CREATE INDEX IF NOT EXISTS idx_category_parent '
-            'ON categories (parent_id)',
-          );
+          await _createIndexes();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          // Stepped: each guarded block adds exactly what its version introduced, so
-          // a database at any older version catches up by running every step above
-          // it, in order.
-          //
-          // v1 → v2: exchange_rates joins the schema.
+          // Stepped: each guarded block adds exactly the table its version
+          // introduced, so a database at any older version catches up by running
+          // every step above it, in order.
           if (from < 2) {
             await m.createTable(exchangeRates);
           }
-          // v2 → v3: accounts joins the schema.
           if (from < 3) {
             await m.createTable(accounts);
           }
-          // v3 → v4: categories joins the schema, with its parent-pointer index.
           if (from < 4) {
             await m.createTable(categories);
-            await customStatement(
-              'CREATE INDEX IF NOT EXISTS idx_category_parent '
-              'ON categories (parent_id)',
-            );
           }
+          if (from < 5) {
+            await m.createTable(transactions);
+          }
+          // By here every table up to the current version exists, so the secondary
+          // indexes can be declared idempotently in one place, shared with onCreate.
+          await _createIndexes();
         },
         beforeOpen: (OpeningDetails details) async {
           // Now load-bearing: exchange_rates has two foreign keys into currencies,
@@ -80,6 +76,31 @@ class AppDatabase extends _$AppDatabase {
           await customStatement('PRAGMA foreign_keys = ON');
         },
       );
+
+  /// The secondary (non-constraint) indexes, declared once and created idempotently
+  /// so the fresh-install and upgrade paths cannot drift apart. `createAll` and
+  /// `createTable` build tables and their unique constraints, but not these — each
+  /// backs a foreign key or a hot query column that would otherwise force a scan.
+  Future<void> _createIndexes() async {
+    // Category tree: the parent pointer every traversal walks.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_category_parent '
+      'ON categories (parent_id)',
+    );
+    // Transactions: the three columns the ledger is queried and sorted by.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_txn_account '
+      'ON transactions (account_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_txn_category '
+      'ON transactions (category_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_txn_date '
+      'ON transactions (transaction_date)',
+    );
+  }
 }
 
 /// Builds the executor without opening it until first use.

@@ -1,123 +1,67 @@
-import 'package:drift/drift.dart';
-import 'package:wealth_os/src/core/database/tables/accounts.dart';
-import 'package:wealth_os/src/core/database/tables/assets.dart';
-import 'package:wealth_os/src/core/database/tables/categories.dart';
-import 'package:wealth_os/src/core/database/tables/currencies.dart';
-import 'package:wealth_os/src/core/database/tables/exchange_rates.dart';
-import 'package:wealth_os/src/core/database/tables/financial_goals.dart';
-import 'package:wealth_os/src/core/database/tables/portfolios.dart';
-import 'package:wealth_os/src/core/database/tables/transactions.dart';
+import 'dart:io';
 
-// ⚠️ GENERATED FILE — does not exist until you run code generation.
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:wealth_os/src/core/database/database_constants.dart';
+import 'package:wealth_os/src/core/database/tables/currencies.dart';
+
+// ⚠️ GENERATED FILE — created by code generation, not by hand.
 //
-// `flutter analyze` will report "Target of URI doesn't exist: 'app_database.g.dart'"
-// and "_$AppDatabase isn't defined" until you run, from the project root:
+// `flutter analyze` reports this missing until you run, from the project root:
 //
 //   dart run build_runner build --delete-conflicting-outputs
 //
-// This is normal and expected for every Drift database, not a fault in this file.
-// The two setup steps — adding the drift dependencies to pubspec.yaml, then running
-// the generator — are spelled out at the top of TASK_019_REPORT.md. Nothing in the
-// data layer compiles until both are done; that is the nature of a code-generated
-// ORM, not something this task could avoid.
+// That is normal for every Drift database. The command, and the full gate
+// sequence, are in TASK_019A_REPORT.md.
 part 'app_database.g.dart';
 
-/// The application's Drift database — the one object that owns the schema.
+/// The application's Drift database.
 ///
-/// It deliberately does **not** open its own connection. The [QueryExecutor] is
-/// injected through the constructor, which keeps this class free of any platform
-/// code (`path_provider`, `sqlite3`, native/web openers all live elsewhere) and
-/// makes it trivially testable: a test passes an in-memory executor, production
-/// passes a file-backed one, and this class cannot tell the difference. That is
-/// dependency inversion doing exactly what it is for — the database depends on the
-/// *abstraction* of an executor, not on how one is obtained.
-///
-/// Wiring a real executor and handing this database to the app belongs in
-/// `bootstrap.dart`, which is out of scope for this task. See TASK_019_REPORT.md.
-@DriftDatabase(
-  tables: <Type>[
-    Currencies,
-    ExchangeRates,
-    Accounts,
-    Portfolios,
-    Assets,
-    Categories,
-    Transactions,
-    FinancialGoals,
-  ],
-)
+/// One responsibility: own the schema and hand out a live connection to it. It
+/// registers the tables, sets the schema version, and opens a SQLite file in the
+/// app's documents directory. Repositories, services, and providers are all
+/// deliberately absent — this task is the foundation and one table, nothing more.
+@DriftDatabase(tables: <Type>[Currencies])
 class AppDatabase extends _$AppDatabase {
-  /// Takes an already-built executor. See the class doc for why the connection is
-  /// injected rather than opened here.
-  AppDatabase(super.executor);
+  /// Opens (lazily) the on-device SQLite database.
+  AppDatabase() : super(_openConnection());
 
-  /// Bumped by one for every shipped schema change, paired with an `onUpgrade` step
-  /// below. Starts at 1 — the first shipped shape.
+  /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
+  /// step. Starts at 1 — the first shipped shape.
   @override
   int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) async {
-          // Creates every table, with its columns, foreign keys and unique
-          // constraints, from the definitions in `tables/`.
+          // Creates the currencies table, with its columns and the UNIQUE(code)
+          // constraint, from the definition in `tables/currencies.dart`.
           await m.createAll();
-
-          // Performance indexes. Created here rather than via a `@TableIndex`
-          // annotation so the exact SQL is visible and version-independent — every
-          // one of these is a foreign key or a hot query column that would
-          // otherwise force a full-table scan on a join or a sort.
-          //
-          // Column and table names are snake_case because that is what Drift emits
-          // from the camelCase getters.
-          await customStatement(
-            'CREATE INDEX idx_account_currency '
-            'ON accounts (currency_id)',
-          );
-          await customStatement(
-            'CREATE INDEX idx_asset_portfolio '
-            'ON assets (portfolio_id)',
-          );
-          await customStatement(
-            'CREATE INDEX idx_asset_currency '
-            'ON assets (currency_id)',
-          );
-          await customStatement(
-            'CREATE INDEX idx_category_parent '
-            'ON categories (parent_id)',
-          );
-          await customStatement(
-            'CREATE INDEX idx_txn_account '
-            'ON transactions (account_id)',
-          );
-          await customStatement(
-            'CREATE INDEX idx_txn_category '
-            'ON transactions (category_id)',
-          );
-          await customStatement(
-            'CREATE INDEX idx_txn_date '
-            'ON transactions (date)',
-          );
-          await customStatement(
-            'CREATE INDEX idx_rate_lookup '
-            'ON exchange_rates (from_currency_id, to_currency_id, effective_date)',
-          );
-          await customStatement(
-            'CREATE INDEX idx_goal_currency '
-            'ON financial_goals (currency_id)',
-          );
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          // No upgrades yet — schemaVersion is 1. Each future bump adds a branch
-          // here that transforms `from` into `to`. See TASK_019_REPORT.md for the
-          // step-by-step and schema-test strategy.
+          // No upgrades yet — schemaVersion is 1. Future bumps add branches here.
         },
         beforeOpen: (OpeningDetails details) async {
-          // SQLite does **not** enforce foreign keys unless asked, per connection,
-          // every time. Without this, a transaction could reference a deleted
-          // account and the database would say nothing. Turned on before any query
-          // runs.
+          // Harmless with a single table, kept so the setting is already correct the
+          // moment a foreign key is introduced: SQLite ignores foreign keys unless
+          // asked, per connection.
           await customStatement('PRAGMA foreign_keys = ON');
         },
       );
+}
+
+/// Builds the executor without opening it until first use.
+///
+/// [LazyDatabase] defers the async directory lookup so the constructor can stay
+/// synchronous. `createInBackground` runs SQLite on its own isolate, keeping heavy
+/// queries off the UI thread — the native binaries come from `sqlite3_flutter_libs`,
+/// the file location from `path_provider`, and the path is joined with `path`.
+LazyDatabase _openConnection() {
+  return LazyDatabase(() async {
+    final Directory documents = await getApplicationDocumentsDirectory();
+    final File file = File(p.join(documents.path, kDatabaseFileName));
+    return NativeDatabase.createInBackground(file);
+  });
 }

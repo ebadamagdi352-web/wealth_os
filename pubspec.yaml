@@ -20,7 +20,7 @@ dependencies:
   uuid: ^4.5.1
   equatable: ^2.0.7
 
-  # ── Data layer (Task 019) ────────────────────────────────────────────
+  # ── Data layer (Task 019A) ───────────────────────────────────────────
   drift: ^2.28.1
   sqlite3_flutter_libs: ^0.5.39
   path_provider: ^2.1.5
@@ -31,7 +31,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
-  # ── Data layer (Task 019) — code generation ──────────────────────────
+  # ── Data layer (Task 019A) — code generation ─────────────────────────
   build_runner: ^2.5.4
   drift_dev: ^2.28.1
 

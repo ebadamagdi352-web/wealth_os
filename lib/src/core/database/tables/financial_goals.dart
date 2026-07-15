@@ -1,26 +1,6 @@
 import 'package:drift/drift.dart';
+import 'package:wealth_os/src/core/database/enums.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
-
-/// Where a goal sits in its lifecycle.
-///
-/// ⚠️ **APPEND-ONLY** (stored by `intEnum` index) — only ever add new values at the
-/// end; reordering or deleting reassigns existing rows.
-enum GoalStatus {
-  active,
-  completed,
-  paused,
-  cancelled,
-}
-
-/// How much a goal matters to the user, for ordering and emphasis.
-///
-/// ⚠️ **APPEND-ONLY** — same rule as [GoalStatus].
-enum GoalPriority {
-  low,
-  medium,
-  high,
-  critical,
-}
 
 /// A savings goal — a target amount the user is working toward.
 ///

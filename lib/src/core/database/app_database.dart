@@ -5,6 +5,10 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:wealth_os/src/core/database/database_constants.dart';
+// Required by the generated part below, not by this file's own code: the
+// `intEnum` converters in app_database.g.dart reference these enum types, and a
+// part sees only its parent library's imports. Do not remove as "unused".
+import 'package:wealth_os/src/core/database/enums.dart';
 import 'package:wealth_os/src/core/database/tables/accounts.dart';
 import 'package:wealth_os/src/core/database/tables/assets.dart';
 import 'package:wealth_os/src/core/database/tables/categories.dart';

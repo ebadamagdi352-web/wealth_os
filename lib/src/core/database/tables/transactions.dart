@@ -1,23 +1,8 @@
 import 'package:drift/drift.dart';
+import 'package:wealth_os/src/core/database/enums.dart';
 import 'package:wealth_os/src/core/database/tables/accounts.dart';
 import 'package:wealth_os/src/core/database/tables/categories.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
-
-/// The nature of a single money movement.
-///
-/// Lives here, with its table, for the same reason `AccountType` and `CategoryType`
-/// live with theirs — the schema has no shared enums file yet.
-///
-/// ⚠️ **APPEND-ONLY.** Stored by its integer index (`intEnum`), so reordering or
-/// deleting a value silently reassigns existing rows. Only ever add new values at
-/// the **end**.
-enum TransactionType {
-  income,
-  expense,
-  transfer,
-  investment,
-  adjustment,
-}
 
 /// A single movement of money — the ledger's atom.
 ///

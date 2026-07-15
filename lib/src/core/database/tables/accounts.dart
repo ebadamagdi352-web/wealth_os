@@ -1,26 +1,6 @@
 import 'package:drift/drift.dart';
+import 'package:wealth_os/src/core/database/enums.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
-
-/// The kind of account.
-///
-/// Defined here, in the table file that uses it, because the schema has no shared
-/// enums file yet and this is the first enum to need a home — co-locating it with
-/// its only consumer keeps it findable without inventing a folder. If a second
-/// table ever needs its own enum, a shared `tables/enums.dart` is the moment to
-/// introduce.
-///
-/// ⚠️ **APPEND-ONLY.** Stored by its integer index (Drift's `intEnum`), so the
-/// database holds `0`, `1`, `2`, not `cash`, `bank`. Reordering or deleting a value
-/// silently reassigns every stored row — only ever add new values at the **end**.
-enum AccountType {
-  cash,
-  bank,
-  creditCard,
-  wallet,
-  investment,
-  loan,
-  other,
-}
 
 /// A place money sits: a bank account, a wallet, a credit card, a loan.
 ///

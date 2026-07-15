@@ -1,31 +1,7 @@
 import 'package:drift/drift.dart';
+import 'package:wealth_os/src/core/database/enums.dart';
 import 'package:wealth_os/src/core/database/tables/accounts.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
-
-/// The kind of owned wealth.
-///
-/// Lives here with its table, like every enum so far, until a shared enums file
-/// earns its place.
-///
-/// ⚠️ **APPEND-ONLY.** Stored by its integer index (`intEnum`), so reordering or
-/// deleting a value silently reassigns existing rows. Only ever add new values at
-/// the **end** — `other` is the catch-all, but real new kinds still go before it in
-/// meaning while being appended in position.
-enum AssetType {
-  cash,
-  gold,
-  silver,
-  stock,
-  etf,
-  mutualFund,
-  bond,
-  crypto,
-  realEstate,
-  vehicle,
-  business,
-  commodity,
-  other,
-}
 
 /// A single holding of owned wealth: grams of gold, shares of a stock, a flat, a
 /// car, a stake in a business.

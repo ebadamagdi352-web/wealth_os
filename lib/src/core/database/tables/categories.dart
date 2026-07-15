@@ -1,22 +1,5 @@
 import 'package:drift/drift.dart';
-
-/// The nature of a category.
-///
-/// Lives in this file for the same reason `AccountType` lives in `accounts.dart` —
-/// the schema has no shared enums file yet, and an enum belongs with its consumer
-/// until a second table needs it.
-///
-/// ⚠️ **APPEND-ONLY.** Stored by its integer index (`intEnum`), so reordering or
-/// deleting a value silently reassigns existing rows. Only ever add new values at
-/// the **end**.
-enum CategoryType {
-  expense,
-  income,
-  investment,
-  transfer,
-  saving,
-  other,
-}
+import 'package:wealth_os/src/core/database/enums.dart';
 
 /// A transaction category, in a tree of unlimited depth.
 ///

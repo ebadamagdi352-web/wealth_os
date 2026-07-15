@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:wealth_os/src/core/database/database_constants.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
+import 'package:wealth_os/src/core/database/tables/exchange_rates.dart';
 
 // ⚠️ GENERATED FILE — created by code generation, not by hand.
 //
@@ -22,31 +23,39 @@ part 'app_database.g.dart';
 /// One responsibility: own the schema and hand out a live connection to it. It
 /// registers the tables, sets the schema version, and opens a SQLite file in the
 /// app's documents directory. Repositories, services, and providers are all
-/// deliberately absent — this task is the foundation and one table, nothing more.
-@DriftDatabase(tables: <Type>[Currencies])
+/// deliberately absent — this layer is schema only.
+@DriftDatabase(tables: <Type>[Currencies, ExchangeRates])
 class AppDatabase extends _$AppDatabase {
   /// Opens (lazily) the on-device SQLite database.
   AppDatabase() : super(_openConnection());
 
   /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
-  /// step. Starts at 1 — the first shipped shape.
+  /// step. Now 2 — v1 was currencies only; v2 adds exchange_rates.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) async {
-          // Creates the currencies table, with its columns and the UNIQUE(code)
-          // constraint, from the definition in `tables/currencies.dart`.
+          // A fresh install: creates every registered table (currencies and
+          // exchange_rates), with their columns and unique constraints. Never runs
+          // onUpgrade — it starts at the current version.
           await m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          // No upgrades yet — schemaVersion is 1. Future bumps add branches here.
+          // v1 → v2: exchange_rates joins the schema. A database created at v1
+          // (currencies only, Task 019A) gains the table here; a fresh install got
+          // it from createAll above and skips this. Guarded by `from` so it runs
+          // once, only on the databases that need it.
+          if (from < 2) {
+            await m.createTable(exchangeRates);
+          }
         },
         beforeOpen: (OpeningDetails details) async {
-          // Harmless with a single table, kept so the setting is already correct the
-          // moment a foreign key is introduced: SQLite ignores foreign keys unless
-          // asked, per connection.
+          // Now load-bearing: exchange_rates has two foreign keys into currencies,
+          // and SQLite ignores foreign keys unless asked, per connection. Without
+          // this, a rate could reference a currency that does not exist and the
+          // database would say nothing.
           await customStatement('PRAGMA foreign_keys = ON');
         },
       );

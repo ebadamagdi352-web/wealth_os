@@ -1,7 +1,6 @@
 name: wealth_os
-description: "A new Flutter project."
-publish_to: 'none'
-
+description: "Wealth OS V2 — personal finance app."
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
@@ -10,26 +9,31 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   flutter_localizations:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
-
   riverpod: ^3.0.0
   flutter_riverpod: ^3.0.0
-
   go_router: ^16.0.0
-
   intl: ^0.20.0
   uuid: ^4.5.1
   equatable: ^2.0.7
 
+  # ── Data layer (Task 019) ────────────────────────────────────────────
+  drift: ^2.28.1
+  sqlite3_flutter_libs: ^0.5.39
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
+
+  # ── Data layer (Task 019) — code generation ──────────────────────────
+  build_runner: ^2.5.4
+  drift_dev: ^2.28.1
 
 flutter:
   uses-material-design: true

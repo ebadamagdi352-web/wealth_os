@@ -4768,6 +4768,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TransactionsTable transactions = $TransactionsTable(this);
   late final $AssetsTable assets = $AssetsTable(this);
   late final $FinancialGoalsTable financialGoals = $FinancialGoalsTable(this);
+  late final AccountsDao accountsDao = AccountsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

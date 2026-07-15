@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:wealth_os/src/core/database/dao/accounts_dao.dart';
 import 'package:wealth_os/src/core/database/database_constants.dart';
 // Required by the generated part below, not by this file's own code: the
 // `intEnum` converters in app_database.g.dart reference these enum types, and a
@@ -43,6 +44,7 @@ part 'app_database.g.dart';
     Assets,
     FinancialGoals,
   ],
+  daos: <Type>[AccountsDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens (lazily) the on-device SQLite database.

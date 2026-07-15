@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:wealth_os/src/core/database/database_constants.dart';
 import 'package:wealth_os/src/core/database/tables/accounts.dart';
+import 'package:wealth_os/src/core/database/tables/categories.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
 import 'package:wealth_os/src/core/database/tables/exchange_rates.dart';
 
@@ -25,15 +26,15 @@ part 'app_database.g.dart';
 /// registers the tables, sets the schema version, and opens a SQLite file in the
 /// app's documents directory. Repositories, services, and providers are all
 /// deliberately absent — this layer is schema only.
-@DriftDatabase(tables: <Type>[Currencies, ExchangeRates, Accounts])
+@DriftDatabase(tables: <Type>[Currencies, ExchangeRates, Accounts, Categories])
 class AppDatabase extends _$AppDatabase {
   /// Opens (lazily) the on-device SQLite database.
   AppDatabase() : super(_openConnection());
 
   /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
-  /// step. Now 3 — v1 currencies, v2 added exchange_rates, v3 adds accounts.
+  /// step. Now 4 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories.
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -41,6 +42,13 @@ class AppDatabase extends _$AppDatabase {
           // A fresh install: creates every registered table, with their columns and
           // constraints. Never runs onUpgrade — it starts at the current version.
           await m.createAll();
+          // Index the categories tree's parent pointer — the column every
+          // children-of / subtree traversal walks. IF NOT EXISTS keeps it identical
+          // and idempotent with the statement the upgrade path runs.
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS idx_category_parent '
+            'ON categories (parent_id)',
+          );
         },
         onUpgrade: (Migrator m, int from, int to) async {
           // Stepped: each guarded block adds exactly what its version introduced, so
@@ -54,6 +62,14 @@ class AppDatabase extends _$AppDatabase {
           // v2 → v3: accounts joins the schema.
           if (from < 3) {
             await m.createTable(accounts);
+          }
+          // v3 → v4: categories joins the schema, with its parent-pointer index.
+          if (from < 4) {
+            await m.createTable(categories);
+            await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_category_parent '
+              'ON categories (parent_id)',
+            );
           }
         },
         beforeOpen: (OpeningDetails details) async {

@@ -10,6 +10,7 @@ import 'package:wealth_os/src/core/database/tables/assets.dart';
 import 'package:wealth_os/src/core/database/tables/categories.dart';
 import 'package:wealth_os/src/core/database/tables/currencies.dart';
 import 'package:wealth_os/src/core/database/tables/exchange_rates.dart';
+import 'package:wealth_os/src/core/database/tables/financial_goals.dart';
 import 'package:wealth_os/src/core/database/tables/transactions.dart';
 
 // ⚠️ GENERATED FILE — created by code generation, not by hand.
@@ -36,6 +37,7 @@ part 'app_database.g.dart';
     Categories,
     Transactions,
     Assets,
+    FinancialGoals,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -43,10 +45,10 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
-  /// step. Now 6 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories,
-  /// v5 transactions, v6 assets.
+  /// step. Now 7 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories,
+  /// v5 transactions, v6 assets, v7 financial_goals.
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -74,6 +76,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 6) {
             await m.createTable(assets);
+          }
+          if (from < 7) {
+            await m.createTable(financialGoals);
           }
           // By here every table up to the current version exists, so the secondary
           // indexes can be declared idempotently in one place, shared with onCreate.
@@ -123,6 +128,19 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_asset_account '
       'ON assets (account_id)',
+    );
+    // Financial goals: filtered by status and priority, grouped by currency.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_goal_status '
+      'ON financial_goals (status)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_goal_priority '
+      'ON financial_goals (priority)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_goal_currency '
+      'ON financial_goals (currency_id)',
     );
   }
 }

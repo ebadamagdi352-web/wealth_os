@@ -4,7 +4,9 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:wealth_os/src/core/database/currency_seed.dart';
 import 'package:wealth_os/src/core/database/dao/accounts_dao.dart';
+import 'package:wealth_os/src/core/database/dao/currencies_dao.dart';
 import 'package:wealth_os/src/core/database/database_constants.dart';
 // Required by the generated part below, not by this file's own code: the
 // `intEnum` converters in app_database.g.dart reference these enum types, and a
@@ -44,7 +46,7 @@ part 'app_database.g.dart';
     Assets,
     FinancialGoals,
   ],
-  daos: <Type>[AccountsDao],
+  daos: <Type>[AccountsDao, CurrenciesDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens (lazily) the on-device SQLite database.
@@ -52,9 +54,11 @@ class AppDatabase extends _$AppDatabase {
 
   /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
   /// step. Now 7 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories,
-  /// v5 transactions, v6 assets, v7 financial_goals.
+  /// Bumped by one for every shipped schema change, each paired with an `onUpgrade`
+  /// step. Now 8 — v1 currencies, v2 exchange_rates, v3 accounts, v4 categories,
+  /// v5 transactions, v6 assets, v7 financial_goals, v8 seeds the default currencies.
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -63,6 +67,7 @@ class AppDatabase extends _$AppDatabase {
           // constraints, then the secondary indexes. Never runs onUpgrade.
           await m.createAll();
           await _createIndexes();
+          await _seedDefaultCurrencies();
         },
         onUpgrade: (Migrator m, int from, int to) async {
           // Stepped: each guarded block adds exactly the table its version
@@ -85,6 +90,12 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 7) {
             await m.createTable(financialGoals);
+          }
+          // v7 → v8: seed the default currencies into databases that predate the
+          // seed. Idempotent, so an install that somehow already has them is
+          // untouched.
+          if (from < 8) {
+            await _seedDefaultCurrencies();
           }
           // By here every table up to the current version exists, so the secondary
           // indexes can be declared idempotently in one place, shared with onCreate.
@@ -148,6 +159,28 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_goal_currency '
       'ON financial_goals (currency_id)',
     );
+  }
+
+  /// Inserts the default currencies (see `currency_seed.dart`).
+  ///
+  /// Idempotent: `InsertMode.insertOrIgnore` skips any row whose primary key or
+  /// unique `code` already exists, so seeding a fresh install and later seeding on
+  /// an upgrade — or any accidental re-run — can never duplicate a currency. Runs
+  /// only from `onCreate` and the `from < 8` upgrade step, never on every open.
+  Future<void> _seedDefaultCurrencies() async {
+    for (final SeedCurrency currency in defaultCurrencies) {
+      await into(currencies).insert(
+        CurrenciesCompanion.insert(
+          id: currency.id,
+          code: currency.code,
+          name: currency.name,
+          symbol: currency.symbol,
+          decimalDigits: Value<int>(currency.decimalDigits),
+          isBaseCurrency: Value<bool>(currency.isBaseCurrency),
+        ),
+        mode: InsertMode.insertOrIgnore,
+      );
+    }
   }
 }
 
